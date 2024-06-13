@@ -2,6 +2,7 @@ from pymongo import MongoClient
 import asyncio
 import time
 import datetime
+from dateutil.relativedelta import relativedelta
 
 # довольно простая реализация подключения
 client = MongoClient("mongodb://localhost:27017/")
@@ -69,7 +70,7 @@ class SumAggregator(BaseAggregator):
         range_dict = {}
         while dt_from <= input_json["dt_upto"]:
             range_dict[dt_from.isoformat()] = 0
-            dt_from += datetime.timedelta(**group_type)
+            dt_from += relativedelta(**group_type)
         if BaseAggregator._logging:
             print(f"generate_date_range finished")
         return range_dict
@@ -137,9 +138,9 @@ class SumAggregator(BaseAggregator):
 
 if __name__ == "__main__":
     test = {
-        "dt_from": "2022-10-01T00:00:00",
-        "dt_upto": "2022-11-30T23:59:00",
-        "group_type": "day"
+       "dt_from": "2022-09-01T00:00:00",
+       "dt_upto": "2022-12-31T23:59:00",
+       "group_type": "month"
     }
 
     temp = SumAggregator()
