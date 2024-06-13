@@ -10,7 +10,7 @@ payment_collection = db.sample_collection
 
 
 class BaseAggregator:
-    _logging = True
+    _logging = False
 
     async def run(self, input_json):
         """
@@ -130,6 +130,7 @@ class SumAggregator(BaseAggregator):
             result["labels"].append(date_range[i])
         if BaseAggregator._logging:
             print(f"glue_together finished, result is: {result}")
+        return result
 
 test = {
     "dt_from": "2022-02-01T00:00:00",
