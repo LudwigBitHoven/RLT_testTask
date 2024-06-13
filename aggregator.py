@@ -3,6 +3,8 @@ import asyncio
 import time
 import datetime
 from dateutil.relativedelta import relativedelta
+from typing import Dict, List
+
 
 # довольно простая реализация подключения
 client = MongoClient("mongodb://localhost:27017/")
@@ -13,7 +15,7 @@ payment_collection = db.sample_collection
 class BaseAggregator:
     _logging = False
 
-    async def run(self, input_json):
+    async def run(self, input_json: Dict) -> Dict:
         """
             основная точка входа, может засекать время выполнения, а также
             тречить выполнение валидации, если _logging = True
@@ -26,7 +28,7 @@ class BaseAggregator:
             print(f"Finished, took {end - start} seconds")
         return result
 
-    async def validate_json(self, input_json):
+    async def validate_json(self, input_json: Dict):
         # проверка типа
         if not isinstance(input_json, dict):
             raise ValueError("It's not a json")
@@ -50,7 +52,7 @@ class BaseAggregator:
 
 
 class SumAggregator(BaseAggregator):
-    async def _aggregate(self, input_json):
+    async def _aggregate(self, input_json: Dict) -> Dict[str, List[str]]:
         # перевевдем string в datetime
         input_json["dt_from"] = datetime.datetime.fromisoformat(
             input_json["dt_from"])
@@ -61,7 +63,7 @@ class SumAggregator(BaseAggregator):
         groups = list(payment_collection.aggregate(pipeline))
         return await self.glue_together(groups, date_range)
 
-    async def generate_date_range(self, input_json):
+    async def generate_date_range(self, input_json: Dict) -> Dict[str, int]:
         """
             генерирует даты с заданным в group_type шагом в пределе от dt_from до dt_upto
         """
@@ -75,7 +77,7 @@ class SumAggregator(BaseAggregator):
             print(f"generate_date_range finished")
         return range_dict
 
-    async def compose_pipeline(self, input_json):
+    async def compose_pipeline(self, input_json: Dict):
         """
             составление пайплайна для агрегации
         """
@@ -119,7 +121,7 @@ class SumAggregator(BaseAggregator):
             print(f"compose_pipeline finished")
         return pipeline
 
-    async def glue_together(self, groups, date_range):
+    async def glue_together(self, groups: List[Dict[str, int]], date_range: Dict[str, List[str]]) -> Dict[List[str], List[int]]:
         """
             функция для склеивания дат из сгенерированного словаря и пайплайна с суммами,
             таким образом учитываются даты с нулевыми суммами
@@ -138,9 +140,9 @@ class SumAggregator(BaseAggregator):
 
 if __name__ == "__main__":
     test = {
-       "dt_from": "2022-09-01T00:00:00",
-       "dt_upto": "2022-12-31T23:59:00",
-       "group_type": "month"
+        "dt_from": "2022-09-01T00:00:00",
+        "dt_upto": "2022-12-31T23:59:00",
+        "group_type": "month"
     }
 
     temp = SumAggregator()
