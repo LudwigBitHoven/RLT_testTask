@@ -19,10 +19,11 @@ class BaseAggregator:
         """
         await self.validate_json(input_json)
         start = time.time()
-        await self._aggregate(input_json)
+        result = await self._aggregate(input_json)
         end = time.time()
         if BaseAggregator._logging:
             print(f"Finished, took {end - start} seconds")
+        return result
 
     async def validate_json(self, input_json):
         # проверка типа
@@ -54,7 +55,8 @@ class SumAggregator(BaseAggregator):
         input_json["dt_upto"] = datetime.datetime.fromisoformat(input_json["dt_upto"])
         date_range = await self.generate_date_range(input_json)
         pipeline = await self.compose_pipeline(input_json)
-        print(list(payment_collection.aggregate(pipeline)))
+        groups = list(payment_collection.aggregate(pipeline))
+        return await self.glue_together(groups, date_range)
 
     async def generate_date_range(self, input_json):
         """
@@ -66,6 +68,8 @@ class SumAggregator(BaseAggregator):
         while dt_from <= input_json["dt_upto"]:
             range_dict[dt_from.isoformat()] = 0
             dt_from += datetime.timedelta(**group_type)
+        if BaseAggregator._logging:
+            print(f"generate_date_range finished")
         return range_dict
 
     async def compose_pipeline(self, input_json):
@@ -108,14 +112,24 @@ class SumAggregator(BaseAggregator):
                 }
             }
         ]
+        if BaseAggregator._logging:
+            print(f"compose_pipeline finished")
         return pipeline
 
     async def glue_together(self, groups, date_range):
         """
-            склеивание дат и результатов агрегации
+            функция для склеивания дат из сгенерированного словаря и пайплайна с суммами,
+            таким образом учитываются даты с нулевыми суммами
         """
-        pass
-
+        result = {"dataset": [], "labels": []}
+        for record in groups:
+            if record["labels"] in date_range:
+                date_range[record["labels"]] = record["dataset"]
+        for i in date_range:
+            result["dataset"].append(i)
+            result["labels"].append(date_range[i])
+        if BaseAggregator._logging:
+            print(f"glue_together finished, result is: {result}")
 
 test = {
     "dt_from": "2022-02-01T00:00:00",
@@ -124,4 +138,4 @@ test = {
 }
 
 temp = SumAggregator()
-asyncio.run(temp.run(test))
+print(asyncio.run(temp.run(test)))
