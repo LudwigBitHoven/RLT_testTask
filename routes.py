@@ -18,7 +18,7 @@ async def start(message: Message):
         result = f"{result}".replace("'", "\"")
         await message.answer(f"{result}")
     except Exception:
-        # при возникновении ошибки во время создания json возвращаемое пример сообщения
+        # при возникновении ошибки во время создания json возвращаем пример сообщения
         temp = {"dt_from": "2022-09-01T00:00:00",
                 "dt_upto": "2022-12-31T23:59:00", "group_type": "month"}
         await message.answer(f"Невалидный запос. Пример запроса: {temp}")
