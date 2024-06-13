@@ -14,7 +14,8 @@ class BaseAggregator:
 
     async def run(self, input_json):
         """
-            основная точка входа, может засекать время выполнения если _logging = True
+            основная точка входа, может засекать время выполнения, а также
+            тречить выполнение валидации, если _logging = True
         """
         await self.validate_json(input_json)
         start = time.time()
@@ -46,13 +47,14 @@ class BaseAggregator:
             print("Validation completed successfully")
 
 
-class Aggregator(BaseAggregator):
+class SumAggregator(BaseAggregator):
     async def _aggregate(self, input_json):
         # перевевдем string в datetime
         input_json["dt_from"] = datetime.datetime.fromisoformat(input_json["dt_from"])
         input_json["dt_upto"] = datetime.datetime.fromisoformat(input_json["dt_upto"])
         date_range = await self.generate_date_range(input_json)
-        print(date_range)
+        pipeline = await self.compose_pipeline(input_json)
+        print(list(payment_collection.aggregate(pipeline)))
 
     async def generate_date_range(self, input_json):
         """
@@ -70,7 +72,43 @@ class Aggregator(BaseAggregator):
         """
             составление пайплайна для агрегации
         """
-        pass
+        # мэтчим группировку
+        format_type = "%Y-%m-%dT00:00:00"
+        if input_json["group_type"] == "hour":
+            format_type = "%Y-%m-%dT%H:00:00"
+        elif input_json["group_type"] == "day":
+            input_json["group_type"] = "dayOfYear"
+        elif input_json["group_type"] == "month":
+            format_type = "%Y-%m-01T00:00:00"
+        elif input_json["group_type"] == "year":
+            format_type = "%Y-01-01T00:00:00"
+        group_type = "$" + input_json["group_type"]
+        # строим пайплайн по шаблону, скорее всего есть реализация гораздо проще
+        pipeline = [
+            {
+                    "$match": {"dt": {"$gte": input_json["dt_from"], "$lte": input_json["dt_upto"]}},
+            },
+            {
+                "$group": {
+                    "_id": {
+                        "day": {group_type: "$dt"}
+                    },
+                    "dataset": {"$sum": "$value"},
+                    "date" : {"$first" : "$dt"}
+                }
+            },
+            {
+                "$sort": {"date": 1}
+            },
+            {
+                "$project": {
+                    "labels": {"$dateToString": {"format": format_type, "date": "$date"}},
+                    "_id": 0,
+                    "dataset": 1
+                }
+            }
+        ]
+        return pipeline
 
     async def glue_together(self, groups, date_range):
         """
@@ -85,5 +123,5 @@ test = {
     "group_type": "hour"
 }
 
-temp = Aggregator()
+temp = SumAggregator()
 asyncio.run(temp.run(test))
