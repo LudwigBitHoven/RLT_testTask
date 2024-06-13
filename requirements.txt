@@ -1,0 +1,5 @@
+aiogram==3.4.1
+pymongo==4.7.3
+pydantic==2.7.4
+pydantic_core==2.18.4
+python-dateutil==2.9.0.post0
