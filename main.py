@@ -15,7 +15,7 @@ class BaseAggregator:
     async def run(self, input_json):
         await self.validate_json()
         start = time.time()
-        self._aggregate()
+        self._aggregate(input_json)
         end = time.time()
         if BaseAggregator._logging:
             print(f"Finished, took {end - start} seconds")
@@ -39,11 +39,25 @@ class BaseAggregator:
         print("Validation completed successfully")
 
 
+class Aggregator(BaseAggregator):
+    async def _aggregate(self, input_json):
+        pass
+
+    async def generate_date_range(self, input_json):
+        pass
+
+    async def compose_pipeline(self, input_json):
+        pass
+
+    async def glue_together(self, groups, date_range):
+        pass
+
+
 test = {
    "dt_from": "2022-02-01T00:00:00",
    "dt_upto": "2022-02-02T00:00:00",
    "group_type": "hour"
 }
 
-temp = BaseAggregator()
-asyncio.run(temp.validate_json(test))
+temp = Aggregator()
+asyncio.run(temp.run(test))
