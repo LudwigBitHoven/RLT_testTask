@@ -126,19 +126,19 @@ class SumAggregator(BaseAggregator):
             if record["labels"] in date_range:
                 date_range[record["labels"]] = record["dataset"]
         for i in date_range:
-            result["dataset"].append(i)
-            result["labels"].append(date_range[i])
+            result["labels"].append(i)
+            result["dataset"].append(date_range[i])
         if BaseAggregator._logging:
             print(f"glue_together finished, result is: {result}")
         return result
 
-test = {
-    "dt_from": "2022-02-01T00:00:00",
-    "dt_upto": "2022-02-02T00:00:00",
-    "group_type": "hour"
-}
-
 
 if __name__ == "__main__":
+    test = {
+        "dt_from": "2022-10-01T00:00:00",
+        "dt_upto": "2022-11-30T23:59:00",
+        "group_type": "day"
+    }
+
     temp = SumAggregator()
     print(asyncio.run(temp.run(test)))
