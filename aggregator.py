@@ -51,8 +51,10 @@ class BaseAggregator:
 class SumAggregator(BaseAggregator):
     async def _aggregate(self, input_json):
         # перевевдем string в datetime
-        input_json["dt_from"] = datetime.datetime.fromisoformat(input_json["dt_from"])
-        input_json["dt_upto"] = datetime.datetime.fromisoformat(input_json["dt_upto"])
+        input_json["dt_from"] = datetime.datetime.fromisoformat(
+            input_json["dt_from"])
+        input_json["dt_upto"] = datetime.datetime.fromisoformat(
+            input_json["dt_upto"])
         date_range = await self.generate_date_range(input_json)
         pipeline = await self.compose_pipeline(input_json)
         groups = list(payment_collection.aggregate(pipeline))
@@ -90,7 +92,7 @@ class SumAggregator(BaseAggregator):
         # строим пайплайн по шаблону, скорее всего есть реализация гораздо проще
         pipeline = [
             {
-                    "$match": {"dt": {"$gte": input_json["dt_from"], "$lte": input_json["dt_upto"]}},
+                "$match": {"dt": {"$gte": input_json["dt_from"], "$lte": input_json["dt_upto"]}},
             },
             {
                 "$group": {
@@ -98,7 +100,7 @@ class SumAggregator(BaseAggregator):
                         "day": {group_type: "$dt"}
                     },
                     "dataset": {"$sum": "$value"},
-                    "date" : {"$first" : "$dt"}
+                    "date": {"$first": "$dt"}
                 }
             },
             {
